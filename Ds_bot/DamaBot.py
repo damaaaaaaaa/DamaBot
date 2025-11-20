@@ -67,7 +67,7 @@ async def on_voice_state_update (member, before, after):
     elif before.channel is not None and after.channel is None:
         await member.guild.system_channel.send (f"{member.name} e' uscito dal canale vocale {before.channel.name}")
 
-# COMANDI 
+#COMANDI IMMAGINI / GIF
 
 @bot.command (name='image', aliases=['foto', 'meme', 'immagine'])
 async def foto (ctx):
@@ -109,6 +109,7 @@ async def foto (ctx):
         await ctx.send ('https://i.imgflip.com/4/5vlgsf.jpg')
     else:
         await ctx.send (random.choice (listaImmagini))
+
     
 @bot.command (name='gif')
 async def gif (ctx):
@@ -120,6 +121,7 @@ async def gif (ctx):
     ]
     await ctx.send (random.choice (listaGif))
 
+#COMANDI PER EMBED
 
 @bot.command (name='phishing', aliases= ['tool', 'phish', 'hack', 'hacking'])
 async def box (ctx):
@@ -131,12 +133,51 @@ async def box (ctx):
         'https://github.com/htr-tech/nexphisher'
     ]
     box = discord.Embed (
-        colour = random.randint (0, 0xffffff),
-        title = 'PHISHING',
-        type = 'rich',
-        description = 'tool su github per phishing',
-        url = random.choice (listaLinkPhishing)
+        colour=random.randint (0, 0xffffff),
+        title='PHISHING',
+        type='rich',
+        description='tool su github per phishing',
+        url=random.choice (listaLinkPhishing)
     )
-    await ctx.send (embed = box)
+    await ctx.send (embed=box)
+
+ #COMANDI PER EMBED SOCIAL
+
+@bot.command (name='instagram', aliases=['Instagram', 'insta', 'Insta'])
+async def insta (ctx):
+    box = discord.Embed (
+        color= 0xff9bc8,
+        title='Instagram',
+        type='rich',
+        description='Pagina Home di Instagram',
+        url='https://www.instagram.com/',
+    )
+    await ctx.send (embed=box)
+
+@bot.command (name='youtube', aliases=['Youtube'])
+async def youtube (ctx):
+    box = discord.Embed (
+        color=0x600000,
+        title='Youtube',
+        type='rich',
+        description='Pagine home di youtube',
+        url='https://www.youtube.com/'
+    )
+    await ctx.send (embed=box)
+
+@bot.command (name='twitch', aiases=['Twitch'])
+async def twitch (ctx):
+    box = discord.Embed (
+        color=0x800080,
+        title='twitch',
+        type='rich',
+        description='pagine home di twitch',
+        url='https://www.twitch.tv/'
+    )
+    await ctx.send (embed=box)
+
+bot.run ('REDACTED')
+
+
 
 
