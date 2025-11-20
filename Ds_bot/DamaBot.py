@@ -67,6 +67,7 @@ async def on_voice_state_update (member, before, after):
     elif before.channel is not None and after.channel is None:
         await member.guild.system_channel.send (f"{member.name} e' uscito dal canale vocale {before.channel.name}")
 
+# COMANDI 
 
 @bot.command (name='image', aliases=['foto', 'meme', 'immagine'])
 async def foto (ctx):
