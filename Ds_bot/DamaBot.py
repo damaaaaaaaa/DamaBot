@@ -176,7 +176,6 @@ async def twitch (ctx):
     )
     await ctx.send (embed=box)
 
-bot.run ('REDACTED')
 
 
 
