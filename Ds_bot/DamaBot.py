@@ -19,7 +19,7 @@ async def on_message (message):
     mess = message.content.capitalize ()
     if message.author == bot.user:
         return
-    elif message.author.id == 714733610065985597 and not mess.startswith ('Ciolino') and message.content[0] != '!':
+    if message.author.id == 714733610065985597 and not mess.startswith ('Ciolino') and message.content[0] != '!':
         await message.channel.send (f"{random.choice (listaRisposteSeve)}{message.author.mention}")
     
     elif message.author.id == 714733610065985597 and mess.startswith ('Ciolino'): 
@@ -28,12 +28,15 @@ async def on_message (message):
     elif message.author.id != 714733610065985597 and mess.startswith ('Ciolino'):
         await message.channel.send (f"Ciolino {message.author.mention}")
 
-    elif mess.startswith ('Ciao'):
+    if mess.startswith ('Ciao'):
         await message.channel.send (f"Ciao {message.author.mention}!")
 
-    elif message.content.startswith (bot.user.mention) and message.author.id != 714733610065985597:
+    if message.content.startswith(bot.user.mention) and message.author.id not in (714733610065985597, 711866613594587188, 759132857879756821):
         await message.channel.send (f"{message.author.mention} cazzo vuoi porco dio")
- 
+
+    elif message.content.startswith (bot.user.mention) and message.author.id in (711866613594587188, 759132857879756821):
+        await message.channel.send (f"{message.author.mention} Padrone🙏")
+
     print (f"Nuovo messaggio -> Utente: [{message.author}] Messaggio: [{message.content}]")
 
     await bot.process_commands (message)
@@ -176,7 +179,7 @@ async def twitch (ctx):
     )
     await ctx.send (embed=box)
 
-
-
+bot.run ('TOKEN')
+    
 
 
