@@ -1,6 +1,7 @@
 import discord 
 from discord.ext import commands 
 import random
+import yt_dlp
 
 permessi = discord.Intents.all ()
 permessi.message_content = True
@@ -51,24 +52,31 @@ async def on_message_edit (before, after):
 @bot.event
 async def on_member_join (member):
     Testuale1 = bot.get_channel (1333167074842906648)
-    await Testuale1.send (f"Benvenuto {member.name.mention}!")
+    await Testuale1.send (f"Benvenuto {member.mention}!")
     print (f"Un nuovo utente e' entrato nel server -> Utente: [{member.name}]")
     with open ('logUtenti.txt', 'a') as f:
-        f.write (f"{member.name} ({member.name.id} si e' unito al server alle ore {member.joined_at})\n")
+        f.write (f"{member.name} ({member.id} si e' unito al server alle ore {member.joined_at})\n")
 
 
 @bot.event
 async def on_voice_state_update (member, before, after):
-    if after.self_deaf or after.self_mute is True and before.channel is not None:
-        await member.guild.system_channel.send (f"{member.name} si e' mutato")
-    elif after.self_deaf or after.self_mute is False and before.channel is not None and after.channel is not None:
-        await member.guild.system_channel.send (f"{member.name} si e' smutato")
-    elif before.channel is None and after.channel is not None:
-        await member.guild.system_channel.send (f"{member.name} e' entrato nel server {after.channel.name}")
-    elif before.channel is not None and after.channel is not None:
-        await member.guild.system_channel.send (f"{member.name} e' passato dal canale vocale -> {before.channel.name} al canale vocale -> {after.channel.name}")
-    elif before.channel is not None and after.channel is None:
-        await member.guild.system_channel.send (f"{member.name} e' uscito dal canale vocale {before.channel.name}")
+    ch = member.guild.system_channel
+    if ch is None:
+        return 
+
+    if before.self_mute != after.self_mute:
+        if after.self_mute:
+            await ch.send (f"{member.display_name} si e' messo in mute")
+        else:
+            await ch.send (f"{member.display_name} si e' tolto il mute")
+    elif before.channel != after.channel:
+        if before.channel is None and after.channel is not None:
+            await ch.send (f"{member.display_name} e' entrato nel canale {after.channel.name}")
+        elif before.channel is not None and after.channel is None:
+            await ch.send (f"{member.display_member} e' escito dal canale {before.channel.name}")
+        elif before.channel is not None and after.channel is not None:
+            await ch.send (f"{member.display_name} e' passato da {before.channel.name} a {after.channel.name}")
+
 
 #COMANDI IMMAGINI / GIF
 
@@ -80,7 +88,7 @@ async def foto (ctx):
         'https://i.imgflip.com/4/4tqto2.jpg',
         'https://i.imgflip.com/2/7d3spl.jpg',
         'https://i.imgflip.com/4/4tqto2.jpg',
-        'https://i.pinimg.com/736x/96/38/0e/96380e81e21f3cc6ff5f50d509aec639.jpg'
+        'https://i.pinimg.com/736x/96/38/0e/96380e81e21f3cc6ff5f50d509aec639.jpg',
         'https://i.pinimg.com/736x/73/82/b2/7382b2e8e8c7be98240ef28a2506800e.jpg',
         'https://i.pinimg.com/1200x/5d/12/fa/5d12fac187d1f880c20f1bc8df24bfbf.jpg',
         'https://i.pinimg.com/736x/d3/ad/35/d3ad3533dbf6efcba6f14ace7d0235c8.jpg',
@@ -91,7 +99,7 @@ async def foto (ctx):
         'https://i.pinimg.com/736x/26/0f/d5/260fd5f74a8766f11477a1e9fc0333e2.jpg',
         'https://i.pinimg.com/736x/93/0a/cb/930acb057460c14cea70cb705b62a024.jpg',
         'https://i.pinimg.com/736x/1b/83/65/1b8365b0ef9ffab35ab6ae7c5be7ff17.jpg',
-        'https://i.pinimg.com/736x/b9/52/ba/b952ba11d783aa7ae94458110ff3512a.jpg'
+        'https://i.pinimg.com/736x/b9/52/ba/b952ba11d783aa7ae94458110ff3512a.jpg',
         'https://i.pinimg.com/736x/15/3c/67/153c67560a08321f94101c2c70c4f508.jpg',
         'https://i.pinimg.com/736x/82/29/75/82297524e017fa163d11120ef5a8cb89.jpg',
         'https://i.pinimg.com/736x/ec/40/cf/ec40cfb2541906c957f44d63e73a6c7a.jpg',
@@ -168,7 +176,7 @@ async def youtube (ctx):
     )
     await ctx.send (embed=box)
 
-@bot.command (name='twitch', aiases=['Twitch'])
+@bot.command (name='twitch', aliases=['Twitch'])
 async def twitch (ctx):
     box = discord.Embed (
         color=0x800080,
@@ -179,7 +187,39 @@ async def twitch (ctx):
     )
     await ctx.send (embed=box)
 
-bot.run ('TOKEN')
-    
 
+    #---COMANDI PER LA MUSICA---
+
+
+ydl_opts = {
+
+    'format': 'bestaudio/best',      
+    'noplaylist': True,
+    'default_search': 'ytsearch',
+    'match_filter': 'duration < 600', 
+    'no_warnings': True,
+    'verbose': False,
+    'retries': 3,
+    'preferredcodec':'mp3',
+    'geo_bypass': True
+
+}
+
+ydl = yt_dlp.YoutubeDL (ydl_opts)
+
+@bot.command (name='join', aliases=['entra', 'connect'])
+async def join (ctx):
+    if not ctx.author.voice.channel:
+        await ctx.send (f"{ctx.member.mention} devi essere connesso a un canale vocale.")
+        return 
+    try:
+        canale = ctx.author.voice.channel
+        await canale.connect ()
+        await ctx.send ("Entrato nel canale vocale", canale)
+    except Exception as e:
+        print ("dio cane non va un cazzo", e)
+        await ctx.send ("Errore durante la connesione al canale vocale.")
+        return
+        
+bot.run("TOKEN")
 
