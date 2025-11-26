@@ -1,7 +1,7 @@
 import discord 
 from discord.ext import commands 
 import random
-import yt_dlp
+import yt_dlp # type: ignore
 
 permessi = discord.Intents.all ()
 permessi.message_content = True
@@ -209,9 +209,13 @@ ydl = yt_dlp.YoutubeDL (ydl_opts)
 
 @bot.command (name='join', aliases=['entra', 'connect'])
 async def join (ctx):
-    if not ctx.author.voice.channel:
-        await ctx.send (f"{ctx.member.mention} devi essere connesso a un canale vocale.")
-        return 
+    try:
+        if ctx.author.voice.channel == None:
+            print (f"{ctx.member.display_name} deve essere in un canale vocale per attivare il bot")
+            await ctx.send (f"{ctx.member.mention} devi essere connesso a un canale vocale.")
+            return 
+    except Exception as e:
+        print ("Puttana la madonna", e)
     try:
         canale = ctx.author.voice.channel
         await canale.connect ()
@@ -220,6 +224,9 @@ async def join (ctx):
         print ("dio cane non va un cazzo", e)
         await ctx.send ("Errore durante la connesione al canale vocale.")
         return
+    finally:
+        print ("Il bot si e' connesso alla chat vocale")
+        await ctx.send (f"{ctx.bot.user.mention} è connesso alla chat vocale {ctx.author.voice.channle.name}")
         
-bot.run("TOKEN")
+bot.run("token")
 
