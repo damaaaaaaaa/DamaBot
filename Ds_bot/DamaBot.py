@@ -209,10 +209,13 @@ ydl = yt_dlp.YoutubeDL (ydl_opts)
 
 @bot.command (name='join', aliases=['entra', 'connect'])
 async def join (ctx):
-    if not ctx.author.voice.channel:
-        print (f"{ctx.member.display_name} deve essere in un canale vocale per attivare il bot")
-        await ctx.send (f"{ctx.member.mention} devi essere connesso a un canale vocale.")
-        return
+    try:
+        if not ctx.author.voice:
+            print (f"{ctx.author.name} deve essere in un canale vocale per attivare il bot")
+            await ctx.send (f"{ctx.author.mention} devi essere connesso a un canale vocale.")
+            return
+    except Exception as e:
+        print ("madonna puttana", e)
     try:
         canale = ctx.author.voice.channel
         await canale.connect ()
