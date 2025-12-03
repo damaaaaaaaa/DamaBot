@@ -73,7 +73,7 @@ async def on_voice_state_update (member, before, after):
         if before.channel is None and after.channel is not None:
             await ch.send (f"{member.display_name} e' entrato nel canale {after.channel.name}")
         elif before.channel is not None and after.channel is None:
-            await ch.send (f"{member.display_member} e' escito dal canale {before.channel.name}")
+            await ch.send (f"{member.display_name} e' escito dal canale {before.channel.name}")
         elif before.channel is not None and after.channel is not None:
             await ch.send (f"{member.display_name} e' passato da {before.channel.name} a {after.channel.name}")
 
@@ -224,7 +224,33 @@ async def join (ctx):
         await ctx.send ("Errore durante la connesione al canale vocale.")
         return
     
-    print ("Il bot si e' connesso alla chat vocale")            
+    print ("Il bot si e' connesso alla chat vocale")  
+
+@bot.command (name='leave', aliases=['quit', 'quitta', 'disconnetti', 'esci', 'porcodioesci'])
+async def disconnect (ctx):
+    try:
+        if (not ctx.author.voice) or ctx.author.voice_channel != ctx.voice_client.channel:
+            print (f"{ctx.author.name} deve essere nel canale vocale del bot per disconnetterlo")
+            await ctx.send (f"{ctx.author.mention} devi essere connesso allo stesso canale vocale del bot.")
+            return 
+    except Exception as e:
+        print ('non va una sega per la disconnessione', e)
+    try:
+        canale = ctx.voice_client
+        await canale.disconnect ()
+    except Exception as e:
+        print ("non va u' cazz", e)
+        await ctx.send ('Errore durante la disconessione dal canale.')
+        return
+    
+@bot.command (name='play')
+async def play (self, ctx, *, url):
+    queue = []
+    canzone = ctx.message.attachments.url[0]
+    queue.append (canzone)
+    print (queue)
+    
+
 
 bot.run("TOKEN")
 
