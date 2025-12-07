@@ -5,6 +5,7 @@ import yt_dlp # type: ignore
 
 permessi = discord.Intents.all ()
 permessi.message_content = True
+permessi.messages = True
 
 bot = commands.Bot (command_prefix='!', intents=permessi)
 
@@ -242,13 +243,17 @@ async def disconnect (ctx):
         print ("non va u' cazz", e)
         await ctx.send ('Errore durante la disconessione dal canale.')
         return
-    
+
 @bot.command (name='play')
-async def play (self, ctx, *, url):
-    queue = []
-    canzone = ctx.message.attachments.url[0]
-    queue.append (canzone)
-    print (queue)
+async def play (ctx, *, url=None):
+    if url == None:
+        await ctx.send ("Devi inserire un link come parametro")
+        return
+    else:
+        coda = []
+        coda.append (url)
+        print ("L'URL È QUESTO:", url, "\n")
+    
     
 
 
