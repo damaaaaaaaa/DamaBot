@@ -250,9 +250,39 @@ async def play (ctx, *, url=None):
         await ctx.send ("Devi inserire un link come parametro")
         return
     else:
+        global coda
         coda = []
         coda.append (url)
         print ("L'URL È QUESTO:", url, "\n")
+
+@bot.command (name='coda', aliases=['queue', 'prossime', 'canzoni', 'prossima'])
+async def visualizzaCoda (ctx):
+    if len (coda) == 0:
+        box = discord.Embed (
+            color=random.randint (0x000000, 0xFFFFFF),
+            type='rich',
+            title='Non ci sono canzoni in coda.'
+        )
+        await ctx.send (embed=box)
+    elif len (coda) == 1:
+        canzoneInCoda = f"C'è {len (coda)} canzone in coda."
+        box = discord.Embed (
+            color=random.randint (0, 0xFFFFFF),
+            type='rich',
+            title=canzoneInCoda,
+        )
+        await ctx.send (embed=box)
+    else:
+        canzoniInCoda = f"Ci sono {len (coda)} canzoni in coda."
+        box = discord.Embed (
+            color=random.randint (0x000000, 0xFFFFFF),
+            type='rich',
+            title=canzoniInCoda,
+        )
+        await ctx.send (embed=box)
+
+
+
     
     
 
