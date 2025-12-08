@@ -1,7 +1,8 @@
 import discord 
-from discord.ext import commands 
+from discord.ext import commands  # pyright: ignore[reportMissingImports]
 import random
-import yt_dlp # type: ignore
+import yt_dlp
+
 
 permessi = discord.Intents.all ()
 permessi.message_content = True
@@ -14,6 +15,7 @@ async def on_ready ():
     testuale1 = bot.get_channel (1333167074842906648)
     await testuale1.send (f"{bot.user.mention} e' online!")
     print (f"loggato come {bot.user}")
+
 
 @bot.event
 async def on_message (message):
@@ -206,6 +208,13 @@ ydl_opts = {
 
 }
 
+FFMPEG_OPTIONS = {
+
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn'
+
+}
+
 ydl = yt_dlp.YoutubeDL (ydl_opts)
 
 @bot.command (name='join', aliases=['entra', 'connect'])
@@ -227,6 +236,7 @@ async def join (ctx):
     
     print ("Il bot si e' connesso alla chat vocale")  
 
+
 @bot.command (name='leave', aliases=['quit', 'quitta', 'disconnetti', 'esci', 'porcodioesci'])
 async def disconnect (ctx):
     try:
@@ -243,17 +253,30 @@ async def disconnect (ctx):
         print ("non va u' cazz", e)
         await ctx.send ('Errore durante la disconessione dal canale.')
         return
+    
 
-@bot.command (name='play')
-async def play (ctx, *, url=None):
+global coda
+coda = []
+
+@bot.command (name='canzone', aliases=['aggiungi', 'metti', 'ficca', 'accoda'])
+async def aggiungi (ctx, *, url=None):
     if url == None:
         await ctx.send ("Devi inserire un link come parametro")
         return
     else:
-        global coda
-        coda = []
         coda.append (url)
         print ("L'URL È QUESTO:", url, "\n")
+
+
+@bot.command (name='play')
+async def play (ctx):
+    if len (coda) == 0:
+        await ctx.send ("Non c'e' nessuna canzone in coda.")
+        return
+    url = coda.pop (0)
+    vc = ctx.voice_client
+
+    
 
 @bot.command (name='coda', aliases=['queue', 'prossime', 'canzoni', 'prossima'])
 async def visualizzaCoda (ctx):
@@ -282,8 +305,21 @@ async def visualizzaCoda (ctx):
         await ctx.send (embed=box)
 
 
+@bot.command (name='link', aliases=['url'])
+async def link (ctx):
+    if len (coda) == 0:
+        box = discord.Embed (
+            color = random.randint (0x000000, 0xFFFFFF),
+            title = "Non c'e' nessun brano in coda."
+        )
+        await ctx.send (embed=box)
+        return
+    box = discord.Embed (
+            color = random.randint (0x000000, 0xFFFFFF),
+            title = coda
+        )
+    await ctx.send (embed=box)
 
-    
     
 
 
