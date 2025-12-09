@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands  # pyright: ignore[reportMissingImports]
 import random
 import yt_dlp
+import asyncio
 
 
 permessi = discord.Intents.all ()
@@ -15,6 +16,7 @@ async def on_ready ():
     testuale1 = bot.get_channel (1333167074842906648)
     await testuale1.send (f"{bot.user.mention} e' online!")
     print (f"loggato come {bot.user}")
+    await bot.add_cog(Music(bot))
 
 
 @bot.event
@@ -194,7 +196,7 @@ async def twitch (ctx):
     #---COMANDI PER LA MUSICA---
 
 
-ydl_opts = {
+YTDL_OPTIONS = {
 
     'format': 'bestaudio/best',      
     'noplaylist': True,
@@ -208,14 +210,7 @@ ydl_opts = {
 
 }
 
-FFMPEG_OPTIONS = {
-
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn'
-
-}
-
-ydl = yt_dlp.YoutubeDL (ydl_opts)
+ydl = yt_dlp.YoutubeDL (YTDL_OPTIONS)
 
 @bot.command (name='join', aliases=['entra', 'connect'])
 async def join (ctx):
@@ -253,72 +248,144 @@ async def disconnect (ctx):
         print ("non va u' cazz", e)
         await ctx.send ('Errore durante la disconessione dal canale.')
         return
+   
+
+FFMPEG_OPTIONS = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn',
+}
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+        self.data = data
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: yt_dlp.YoutubeDL(YTDL_OPTIONS).extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # Take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else yt_dlp.YoutubeDL(YTDL_OPTIONS).prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS), data=data)             
     
-
-global coda
-coda = []
-
-@bot.command (name='canzone', aliases=['aggiungi', 'metti', 'ficca', 'accoda'])
-async def aggiungi (ctx, *, url=None):
-    if url == None:
-        await ctx.send ("Devi inserire un link come parametro")
-        return
-    else:
-        coda.append (url)
-        print ("L'URL È QUESTO:", url, "\n")
-
-
-@bot.command (name='play')
-async def play (ctx):
-    if len (coda) == 0:
-        await ctx.send ("Non c'e' nessuna canzone in coda.")
-        return
-    url = coda.pop (0)
-    vc = ctx.voice_client
-
+class Music(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.coda= []
     
-
-@bot.command (name='coda', aliases=['queue', 'prossime', 'canzoni', 'prossima'])
-async def visualizzaCoda (ctx):
-    if len (coda) == 0:
+    @commands.command (name='play', aliases=['suona'], help='Inserisci un link per aggiungere il brano alla coda')
+    async def play (self, ctx, *, url=None):
+        if url == None:
+            await ctx.send ("Devi inserire un link come parametro") 
+        self.coda.append (url)
         box = discord.Embed (
             color=random.randint (0x000000, 0xFFFFFF),
-            type='rich',
-            title='Non ci sono canzoni in coda.'
-        )
-        await ctx.send (embed=box)
-    elif len (coda) == 1:
-        canzoneInCoda = f"C'è {len (coda)} canzone in coda."
-        box = discord.Embed (
-            color=random.randint (0, 0xFFFFFF),
-            type='rich',
-            title=canzoneInCoda,
-        )
-        await ctx.send (embed=box)
-    else:
-        canzoniInCoda = f"Ci sono {len (coda)} canzoni in coda."
-        box = discord.Embed (
-            color=random.randint (0x000000, 0xFFFFFF),
-            type='rich',
-            title=canzoniInCoda,
+            title='URL inserito nella coda',
         )
         await ctx.send (embed=box)
 
+        vc = ctx.voice_client
+    
+        if not vc.is_playing():
+            await self.play_next(ctx)
 
-@bot.command (name='link', aliases=['url'])
-async def link (ctx):
-    if len (coda) == 0:
+        player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        vc.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+
+    async def play_next (self, ctx):
+        if len (self.coda) > 0: 
+            self.play_next (ctx)
+        
+        url = self.coda.pop(0)
+        player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        ctx.voice_client.play(player, after=lambda e: self.bot.loop.create_task(self.play_next(ctx)))
+        await ctx.send(f"Ora in riproduzione: **{player.title}**")
+
+
+    '''
+    @commands.command (name='pause', aliases=['pausa', 'stop', 'basta'], help='Mette in pausa la canzone.')
+    async def _pause (self, ctx):
+        vc = ctx.voice_client
+        if not vc or vc.is_playing ():
+            box = discord.Embed (
+                title="",
+                description="Non c'e' nessuna canzone in riproduzione al momento.",
+                color=random.randint (0x000000, 0xFFFFFF),
+            )
+            await ctx.send (embed=box)
+        elif vc.is_paused ():
+            box = discord.Embed (
+                title="",
+                description="Sono gia' in pausa.",
+                color=random.randint (0x000000, 0xFFFFFF),
+            )
+            await ctx.send (embed=box)
+        vc.pause ()
+        await ctx.send ("Canzone in pausa 🎵")
+
+    
+    @commands.command (name='prossima', aliases=['successiva', 'next'], help="Se la coda non e' vuota fa partire la canzone successiva.")
+    async def _next_song (self, ctx):
+        vc = ctx.voice_client
+        if not vc or vc.is_playing ():
+            box = discord.Embed (
+                title="",
+                description="Non c'e' nessuna canzone in riproduzione al momento.",
+                color=random.randint (0x000000, 0xFFFFFF),
+            )
+            await ctx.send (embed=box)
+        self.coda.pop (0)
+        if len (self.coda) > 0: 
+            self.play_next
+    '''
+
+    @commands.command (name='coda', aliases=['queue', 'prossime', 'canzoni', 'prossima'])
+    async def visualizzaCoda (self, ctx):
+        if len (self.coda) == 0:
+            box = discord.Embed (
+                color=random.randint (0x000000, 0xFFFFFF),
+                type='rich',
+                title='Non ci sono canzoni in coda.',
+            )
+            await ctx.send (embed=box)
+        elif len (self.coda) == 1:
+            canzoneInCoda = f"C'è {len (self.coda)} canzone in coda."
+            box = discord.Embed (
+                color=random.randint (0, 0xFFFFFF),
+                type='rich',
+                title=canzoneInCoda,
+            )
+            await ctx.send (embed=box)
+        else:
+            canzoniInCoda = f"Ci sono {len (self.coda)} canzoni in coda."
+            box = discord.Embed (
+                color=random.randint (0x000000, 0xFFFFFF),
+                type='rich',
+                title=canzoniInCoda,
+            )
+        await ctx.send (embed=box)
+
+    @commands.command (name='link', aliases=['url'])
+    async def link (self, ctx):
+        if len (self.coda) == 0:
+            box = discord.Embed (
+                color = random.randint (0x000000, 0xFFFFFF),
+                title = "Non c'e' nessun brano in coda."
+            )
+            await ctx.send (embed=box)
+            return
         box = discord.Embed (
             color = random.randint (0x000000, 0xFFFFFF),
-            title = "Non c'e' nessun brano in coda."
-        )
+            title = self.coda
+            )
         await ctx.send (embed=box)
-        return
-    box = discord.Embed (
-            color = random.randint (0x000000, 0xFFFFFF),
-            title = coda
-        )
-    await ctx.send (embed=box)
+
 
     
 
